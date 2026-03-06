@@ -1,0 +1,42 @@
+{
+  "manifest_version": 3,
+  "name": "Slack Copy Plus Link",
+  "version": "0.1.0",
+  "description": "Copy Slack message text and permalink with one click or keyboard shortcut.",
+  "permissions": [
+    "activeTab",
+    "scripting"
+  ],
+  "host_permissions": [
+    "https://app.slack.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "Copy hovered Slack message"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://app.slack.com/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "css": [
+        "content.css"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "commands": {
+    "copy-slack-message": {
+      "suggested_key": {
+        "default": "Alt+Shift+C",
+        "mac": "Alt+Shift+C"
+      },
+      "description": "Copy hovered/focused Slack message text and permalink"
+    }
+  }
+}

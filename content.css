@@ -1,0 +1,43 @@
+.scpl-copy-btn {
+  position: fixed;
+  z-index: 2147483646;
+  display: none;
+  padding: 4px 10px;
+  border: 1px solid rgba(18, 100, 163, 0.45);
+  border-radius: 6px;
+  background: #ffffff;
+  color: #1264a3;
+  font-family: "Slack-Lato", "Noto Sans JP", sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.4;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+}
+
+.scpl-copy-btn:hover {
+  background: #e8f5ff;
+}
+
+.scpl-toast {
+  position: fixed;
+  right: 16px;
+  bottom: 20px;
+  z-index: 2147483647;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: rgba(29, 28, 29, 0.95);
+  color: #ffffff;
+  font-family: "Slack-Lato", "Noto Sans JP", sans-serif;
+  font-size: 12px;
+  line-height: 1.4;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 150ms ease, transform 150ms ease;
+  pointer-events: none;
+}
+
+.scpl-toast.scpl-show {
+  opacity: 1;
+  transform: translateY(0);
+}
