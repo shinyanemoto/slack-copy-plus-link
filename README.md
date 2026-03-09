@@ -27,6 +27,9 @@ Slack Web (`https://app.slack.com/*`) 上で、メッセージ本文とメッセ
 <message text>
 https://app.slack.com/archives/<channel>/p<timestamp>
 投稿日時: YYYY-MM-DD HH:mm:ss (<your timezone>)
+投稿内URL:
+- https://example.com
+- https://example.org
 ```
 
 ## 注意点 (MVP)

@@ -135,6 +135,7 @@ async function copyMessageData(messageNode) {
   const text = extractMessageText(messageNode);
   const permalink = extractPermalink(messageNode);
   const postedAt = extractPostedAt(messageNode);
+  const messageUrls = extractMessageUrls(messageNode, permalink);
 
   if (!text) {
     showToast("本文の取得に失敗しました");
@@ -149,9 +150,11 @@ async function copyMessageData(messageNode) {
     return false;
   }
 
-  const payload = `${text}\n${permalink}\n投稿日時: ${postedAt}`;
+  const urlsSection =
+    messageUrls.length > 0 ? `\n投稿内URL:\n${messageUrls.map((url) => `- ${url}`).join("\n")}` : "";
+  const payload = `${text}\n${permalink}\n投稿日時: ${postedAt}${urlsSection}`;
   const copied = await writeToClipboard(payload);
-  showToast(copied ? "本文 + リンク + 投稿日時をコピーしました" : "コピーに失敗しました");
+  showToast(copied ? "本文 + リンク + 投稿日時 + 投稿内URLをコピーしました" : "コピーに失敗しました");
   return copied;
 }
 
@@ -271,6 +274,40 @@ function extractPostedAt(messageNode) {
   const ss = String(date.getSeconds()).padStart(2, "0");
   const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || "local";
   return `${yyyy}-${mm}-${dd} ${hh}:${mi}:${ss} (${timeZone})`;
+}
+
+function extractMessageUrls(messageNode, permalink) {
+  if (!(messageNode instanceof Element)) {
+    return [];
+  }
+
+  const contentNodes = [];
+  for (const selector of TEXT_SELECTORS) {
+    const matches = Array.from(messageNode.querySelectorAll(selector));
+    for (const node of matches) {
+      contentNodes.push(node);
+    }
+  }
+  for (const node of Array.from(messageNode.querySelectorAll(".p-rich_text_section"))) {
+    contentNodes.push(node);
+  }
+
+  const searchRoots = contentNodes.length > 0 ? contentNodes : [messageNode];
+  const urls = new Set();
+  for (const root of searchRoots) {
+    for (const anchor of Array.from(root.querySelectorAll("a[href]"))) {
+      const absoluteUrl = toAbsoluteUrl(anchor.getAttribute("href"));
+      if (!absoluteUrl) {
+        continue;
+      }
+      if (permalink && absoluteUrl === permalink) {
+        continue;
+      }
+      urls.add(absoluteUrl);
+    }
+  }
+
+  return Array.from(urls);
 }
 
 function extractRawTimestamp(messageNode) {
