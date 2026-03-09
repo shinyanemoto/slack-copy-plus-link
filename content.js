@@ -134,6 +134,7 @@ async function copyFromBestTarget() {
 async function copyMessageData(messageNode) {
   const text = extractMessageText(messageNode);
   const permalink = extractPermalink(messageNode);
+  const postedAt = extractPostedAt(messageNode);
 
   if (!text) {
     showToast("本文の取得に失敗しました");
@@ -143,10 +144,14 @@ async function copyMessageData(messageNode) {
     showToast("リンクの取得に失敗しました");
     return false;
   }
+  if (!postedAt) {
+    showToast("投稿日時の取得に失敗しました");
+    return false;
+  }
 
-  const payload = `${text}\n${permalink}`;
+  const payload = `${text}\n${permalink}\n投稿日時: ${postedAt}`;
   const copied = await writeToClipboard(payload);
-  showToast(copied ? "本文 + リンクをコピーしました" : "コピーに失敗しました");
+  showToast(copied ? "本文 + リンク + 投稿日時をコピーしました" : "コピーに失敗しました");
   return copied;
 }
 
@@ -244,6 +249,87 @@ function hasMessageIdentity(messageNode) {
     return true;
   }
   return Boolean(extractTimestampDigits(messageNode));
+}
+
+function extractPostedAt(messageNode) {
+  const rawTimestamp = extractRawTimestamp(messageNode);
+  const millis = toTimestampMillis(rawTimestamp);
+  if (!Number.isFinite(millis)) {
+    return "";
+  }
+
+  const date = new Date(millis);
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+
+  const yyyy = String(date.getFullYear());
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  const dd = String(date.getDate()).padStart(2, "0");
+  const hh = String(date.getHours()).padStart(2, "0");
+  const mi = String(date.getMinutes()).padStart(2, "0");
+  const ss = String(date.getSeconds()).padStart(2, "0");
+  const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || "local";
+  return `${yyyy}-${mm}-${dd} ${hh}:${mi}:${ss} (${timeZone})`;
+}
+
+function extractRawTimestamp(messageNode) {
+  if (!(messageNode instanceof Element)) {
+    return "";
+  }
+
+  const dataTs =
+    messageNode.querySelector("[data-ts]")?.getAttribute("data-ts") ||
+    messageNode.getAttribute("data-ts");
+  if (dataTs) {
+    return dataTs;
+  }
+
+  const permalinkFromNode = messageNode.querySelector('a[href*="/archives/"][href*="/p"]')?.getAttribute("href");
+  if (permalinkFromNode) {
+    const permalinkMatch = permalinkFromNode.match(/\/p(\d{10,})/);
+    if (permalinkMatch?.[1]) {
+      return permalinkMatch[1];
+    }
+  }
+
+  return extractTimestampDigits(messageNode);
+}
+
+function toTimestampMillis(rawTimestamp) {
+  if (!rawTimestamp) {
+    return NaN;
+  }
+
+  const normalized = String(rawTimestamp).trim();
+  if (!normalized) {
+    return NaN;
+  }
+
+  if (/^\d{10}\.\d+$/.test(normalized)) {
+    return Math.floor(Number.parseFloat(normalized) * 1000);
+  }
+
+  const digits = normalized.replace(/[^\d]/g, "");
+  if (!digits) {
+    return NaN;
+  }
+
+  if (digits.length === 16) {
+    const seconds = Number.parseInt(digits.slice(0, 10), 10);
+    const micros = Number.parseInt(digits.slice(10), 10);
+    return seconds * 1000 + Math.floor(micros / 1000);
+  }
+
+  if (digits.length >= 13) {
+    return Number.parseInt(digits.slice(0, 13), 10);
+  }
+
+  if (digits.length >= 10) {
+    return Number.parseInt(digits.slice(0, 10), 10) * 1000;
+  }
+
+  return NaN;
 }
 
 function extractTimestampDigits(messageNode) {

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Slack Copy Plus Link",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Copy Slack message text and permalink with one click or keyboard shortcut.",
   "permissions": [
     "activeTab",
