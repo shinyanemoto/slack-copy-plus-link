@@ -8,7 +8,11 @@ const TEXT_SELECTORS = [
   '[data-qa="message-text"]',
   '[data-qa="message-text-container"]',
   ".c-message__body",
-  ".p-rich_text_block"
+  ".p-rich_text_block",
+  ".c-message_attachment__text",
+  ".c-message_attachment__field",
+  ".c-message_kit__text",
+  ".c-mrkdwn__text"
 ];
 
 let hoveredMessage = null;
@@ -170,14 +174,14 @@ function findMessageContainer(node) {
   }
 
   const hasText = Boolean(extractMessageText(candidate));
-  const hasLink = Boolean(extractPermalink(candidate));
-  return hasText && hasLink ? candidate : null;
+  const hasIdentity = hasMessageIdentity(candidate);
+  return hasText && hasIdentity ? candidate : null;
 }
 
 function findMostRecentVisibleMessage() {
   const items = Array.from(document.querySelectorAll(MESSAGE_SELECTOR));
   const visible = items.filter(isElementVisible).filter((item) => {
-    return Boolean(extractMessageText(item) && extractPermalink(item));
+    return Boolean(extractMessageText(item) && hasMessageIdentity(item));
   });
   if (visible.length === 0) {
     return null;
@@ -210,12 +214,7 @@ function extractPermalink(messageNode) {
     return toAbsoluteUrl(anchor.getAttribute("href"));
   }
 
-  const tsCandidate = messageNode.querySelector("[data-ts]");
-  const rawTs =
-    tsCandidate?.getAttribute("data-ts") ||
-    messageNode.getAttribute("data-ts") ||
-    "";
-  const ts = rawTs.replace(/[^\d]/g, "");
+  const ts = extractTimestampDigits(messageNode);
   const channelId = getChannelIdFromLocation();
 
   if (!ts || !channelId) {
@@ -235,6 +234,41 @@ function getChannelIdFromLocation() {
     return client[1];
   }
   return "";
+}
+
+function hasMessageIdentity(messageNode) {
+  if (!(messageNode instanceof Element)) {
+    return false;
+  }
+  if (messageNode.querySelector('[data-ts], a[href*="/archives/"][href*="/p"], time')) {
+    return true;
+  }
+  return Boolean(extractTimestampDigits(messageNode));
+}
+
+function extractTimestampDigits(messageNode) {
+  if (!(messageNode instanceof Element)) {
+    return "";
+  }
+
+  const tsFromData =
+    messageNode.querySelector("[data-ts]")?.getAttribute("data-ts") ||
+    messageNode.getAttribute("data-ts") ||
+    "";
+  const normalized = tsFromData.replace(/[^\d]/g, "");
+  if (normalized.length >= 10) {
+    return normalized;
+  }
+
+  const nodeId = messageNode.getAttribute("id") || "";
+  const idFromNode = nodeId.match(/^p(\d{10,})$/)?.[1];
+  if (idFromNode) {
+    return idFromNode;
+  }
+
+  const idElement = messageNode.querySelector('[id^="p"]');
+  const idFromChild = (idElement?.getAttribute("id") || "").match(/^p(\d{10,})$/)?.[1];
+  return idFromChild || "";
 }
 
 function normalizeText(value) {
